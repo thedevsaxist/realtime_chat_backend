@@ -1,22 +1,28 @@
 import http from 'http';
-import { Server } from 'socket.io';
+// import { Server } from 'socket.io';
+import { WebSocketServer, WebSocket } from 'ws';
 import { app } from './app';
 import { logger } from './shared/logger';
 import { config } from './config';
 
 const server = http.createServer(app);
 
-import { registerChatSocketEvents } from './modules/chat/chat.socket';
+// import { registerChatSocketEvents } from './modules/chat/chat.socket';
+import { registerRawChatSocketEvents } from './modules/chat/chat.raw.socket';
+
+// Initialize Raw WebSocket Server
+export const wss = new WebSocketServer({ server });
+registerRawChatSocketEvents(wss);
 
 // Initialize Socket.io
-export const io = new Server(server, {
-  cors: {
-    origin: '*', // Adjust for production
-    methods: ['GET', 'POST'],
-  },
-});
+// export const io = new Server(server, {
+//   cors: {
+//     origin: '*', // Adjust for production
+//     methods: ['GET', 'POST'],
+//   },
+// });
 
-registerChatSocketEvents(io);
+// registerChatSocketEvents(io);
 
 const startServer = () => {
   server.listen(config.port, () => {
