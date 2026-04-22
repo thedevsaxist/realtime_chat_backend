@@ -10,5 +10,5 @@ const chatRepository = new ChatRepository();
 const chatService = new ChatService(chatRepository);
 const chatController = new ChatController(chatService);
 
-chatRoutes.post('/messages', chatController.sendMessage);
-chatRoutes.get('/messages', chatController.getMessages);
+chatRoutes.post('/', chatController.sendMessage);
+chatRoutes.get('/', chatController.getMessages);
