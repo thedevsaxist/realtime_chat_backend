@@ -10,10 +10,12 @@ app.use(express.json());
 
 import { chatRoutes } from './modules/chat/chat.routes';
 import { healthRoutes } from './modules/health/health.routes';
+import { authRoutes } from './modules/auth/auth.routes';
 
 // Routes
 app.use('/health', healthRoutes);
 app.use('/messages', chatRoutes);
+app.use('/auth', authRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
