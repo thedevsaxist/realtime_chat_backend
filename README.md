@@ -1,125 +1,168 @@
 # Realtime Chat Backend
 
-A production-ready minimal realtime chat backend built with Node.js, Express, TypeScript, WebSockets (Socket.io), SQLite, and Prisma ORM.
+Minimal realtime chat backend built with Node.js, Express, TypeScript, Prisma, SQLite, JWT auth, and raw WebSockets (`ws`).
 
 ## Tech Stack
 
 - **Runtime:** Node.js
 - **Framework:** Express.js
 - **Language:** TypeScript
-- **WebSockets:** Socket.io
+- **WebSockets:** `ws` (raw WebSocket server)
 - **ORM:** Prisma
 - **Database:** SQLite
+- **Authentication:** JWT
+- **Validation:** Zod
 - **Logger:** Winston
 
 ## Features
 
-- **RESTful API:** Endpoints for sending and paginating/retrieving messages.
-- **Real-Time WebSockets:** Real-time message broadcasting to specific conversation rooms.
-- **Data Persistence:** Prisma ORM connected to a SQLite database.
-- **Modular Architecture:** Cleanly separated layers (Controller, Service, Repository, Socket).
-- **Error Handling:** Centralized global error handler and structured logging.
+- **Auth module:** Register and login endpoints that issue JWT tokens.
+- **Protected REST APIs:** Message endpoints are protected by auth middleware.
+- **Chat module:** Send and retrieve messages with cursor-based pagination.
+- **Realtime messaging:** Broadcast message events to room subscribers over raw WebSocket.
+- **Persistence:** SQLite database through Prisma.
+- **Code-level API docs:** Swagger/OpenAPI JSDoc annotations on route/controller files.
 
 ## Project Structure
 
-```
+```text
 src/
-├── app.ts                  # Express application setup and global middleware
-├── server.ts               # HTTP server and Socket.io initialization
-├── config/                 # Environment configuration variables
+├── app.ts                  # Express app, middleware, and route mounting
+├── server.ts               # HTTP + raw WebSocket server bootstrap
+├── config/                 # Runtime configuration
 ├── infrastructure/
-│   └── database/           # Prisma schema and database seed scripts
+│   └── database/           # Prisma client, schema, and seed scripts
 ├── modules/
-│   ├── chat/               # Chat feature (routes, controller, service, repository, sockets)
-│   └── health/             # API health check endpoints
-└── shared/                 # Shared utilities (logger, error handler middleware)
+│   ├── auth/               # Auth routes and controller
+│   ├── chat/               # Chat routes/controller/service/repository/socket handlers
+│   └── health/             # Health check route
+└── shared/                 # Shared middleware, logger, models, utils
 ```
 
 ## Getting Started
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v16 or higher recommended)
+- [Node.js](https://nodejs.org/) (v18+ recommended)
 - [npm](https://www.npmjs.com/)
 
 ### Installation
 
-1. **Clone the repository** and navigate to the project directory.
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-3. **Set up Environment Variables:**
-   A `.env` file should be located at the root of the project. If not, create one:
-   ```env
-   PORT=3000
-   DATABASE_URL="file:./dev.db"
-   NODE_ENV="development"
-   ```
+1. Clone the repository and move into the project directory.
+1. Install dependencies:
 
-### Database Setup
+```bash
+npm install
+```
 
-Run Prisma migrations to create the SQLite database structure and generate the Prisma Client:
+1. Create a `.env` file in the project root:
+
+```env
+PORT=3000
+NODE_ENV=development
+DATABASE_URL="file:./dev.db"
+JWT_SECRET="your-super-secret-key"
+```
+
+## Database Setup
+
+Create/update the SQLite schema and Prisma client:
 
 ```bash
 npx prisma db push
-# or
 npx prisma generate
 ```
 
-You can also seed the database with initial data (e.g., test conversations/messages):
+Optional: seed the database with sample data.
 
 ```bash
 npm run seed
 ```
 
-### Running the Server
+## Running the Server
 
-- **Development Mode (with hot-reload):**
-  ```bash
-  npm run dev
-  ```
-- **Production Build & Run:**
-  ```bash
-  npm run build
-  npm start
-  ```
+Development:
 
-The server will start at `http://localhost:3000`.
+```bash
+npm run dev
+```
 
-## API Documentation
+Production:
 
-### REST Endpoints
+```bash
+npm run build
+npm start
+```
 
-#### Health Check
-- `GET /health`
-  - Checks if the API is running correctly.
+Default server URL: `http://localhost:3000`
 
-#### Messages
+## REST API
+
+### Health
+
+- `GET /health` - simple health check.
+
+### Auth
+
+- `POST /auth/register`
+  - Body: `{ "email": "user@example.com", "password": "password123", "firstName": "John", "lastName": "Doe" }`
+  - Returns: `{ token, user }`
+
+- `POST /auth/login`
+  - Body: `{ "email": "user@example.com", "password": "password123" }`
+  - Returns: `{ user, token, conversations }`
+
+### Messages (Protected)
+
+All `/messages` routes require:
+
+```http
+Authorization: Bearer <jwt_token>
+```
+
 - `POST /messages`
-  - **Description:** Sends a new message to a conversation.
-  - **Body Format:** `{ "conversationId": "uuid", "senderId": "uuid", "content": "Hello!" }`
+  - Body: `{ "conversationId": "conv_id", "senderId": "user_id", "content": "Hello!" }`
+  - Returns created message payload.
 
-- `GET /messages`
-  - **Description:** Retrieves messages for a specific conversation.
-  - **Query Params:** `conversationId` (required), along with pagination parameters.
+- `GET /messages?conversationId=<id>&limit=20&before=<messageId>`
+  - `conversationId` is required.
+  - `limit` is optional (defaults to 20).
+  - `before` is an optional cursor (message id) for pagination.
 
-### WebSocket Events
+## WebSocket API (Raw `ws`)
 
-The Socket.io server is available at the root URL (e.g., `ws://localhost:3000`).
+Connect to:
 
-#### Client Emits (to Server)
-- `join_conversation` (payload: `conversationId: string`): Subscribes the client to a specific conversation room.
-- `leave_conversation` (payload: `conversationId: string`): Unsubscribes the client from a room.
-- `send_message` (payload: `{ conversationId: string, senderId: string, content: string }`): Sends a message via WebSocket, which is saved to the DB and broadcasted to the room.
+```text
+ws://localhost:3000
+```
 
-#### Server Emits (to Client)
-- `message_created` (payload: `Message` object): Broadcasted to all clients in a conversation room when a new message is successfully created.
-- `error` (payload: `{ message: string }`): Emitted if a socket operation fails.
+Messages are JSON with this envelope:
+
+```json
+{ "event": "event_name", "data": {} }
+```
+
+Client -> Server events:
+
+- `join_conversation` with `data` as `conversationId` string.
+- `leave_conversation` with `data` as `conversationId` string.
+- `send_message` with `data`:
+  - `{ "conversationId": "conv_id", "senderId": "user_id", "content": "Hello!" }`
+
+Server -> Client events:
+
+- `message_created` with the persisted message object.
+- `error` with `{ "message": "Failed to process message" }`.
+
+## Swagger Notes
+
+- Swagger/OpenAPI annotations are embedded as JSDoc in route/controller files (for example `auth` and `chat` routes).
+- If you want interactive docs (Swagger UI), add `swagger-jsdoc` + `swagger-ui-express` and mount a docs route (e.g. `/docs`).
 
 ## Development Scripts
 
-- `npm run dev`: Start the server in development mode using `tsx watch`.
-- `npm run build`: Compile TypeScript code into the `dist/` folder.
-- `npm start`: Run the compiled JavaScript in production.
-- `npm run seed`: Execute the Prisma database seeding script.
+- `npm run dev` - run server in watch mode via `tsx`.
+- `npm run build` - compile TypeScript to `dist/`.
+- `npm start` - run compiled server from `dist/`.
+- `npm run seed` - run Prisma seed script.

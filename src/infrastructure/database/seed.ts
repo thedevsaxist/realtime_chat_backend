@@ -1,15 +1,16 @@
 import { PrismaClient } from '@prisma/client';
+import { logger } from '../../shared/logger';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Seeding database...');
+  logger.info('Seeding database...');
 
   // Create a conversation
   const conversation = await prisma.conversation.create({
     data: {},
   });
-  console.log(`Created conversation with ID: ${conversation.id}`);
+  logger.info(`Created conversation with ID: ${conversation.id}`);
 
   // Create some initial messages
   await prisma.message.createMany({
@@ -31,13 +32,13 @@ async function main() {
     where: { conversationId: conversation.id },
   });
 
-  console.log(`Created ${messageCount} messages in conversation ${conversation.id}`);
-  console.log('Database seeding completed.');
+  logger.info(`Created ${messageCount} messages in conversation ${conversation.id}`);
+  logger.info('Database seeding completed.');
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    logger.error(e);
     process.exit(1);
   })
   .finally(async () => {

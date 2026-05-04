@@ -4,7 +4,9 @@ exports.prisma = void 0;
 const client_1 = require("@prisma/client");
 // Prevent multiple instances of Prisma Client in development
 const globalForPrisma = global;
-exports.prisma = globalForPrisma.prisma || new client_1.PrismaClient();
+exports.prisma = globalForPrisma.prisma || new client_1.PrismaClient({
+    log: ['query'],
+});
 if (process.env.NODE_ENV !== 'production') {
     globalForPrisma.prisma = exports.prisma;
 }
