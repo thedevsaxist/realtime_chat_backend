@@ -1,3 +1,7 @@
+export interface CreateConversationDTO {
+  participantIds: string[];
+}
+
 export interface CreateMessageDTO {
   conversationId: string;
   senderId: string;
@@ -9,3 +13,10 @@ export interface GetMessagesDTO {
   before?: string;
   limit?: number;
 }
+
+// export interface CreateConversationDTO {
+//   id: string;
+//   senderId: string;
+//   receiverId: string;
+//   createdAt: Date;
+// }

@@ -28,10 +28,17 @@ interface Message {
   createdAt: Date;
 }
 
+interface ConversationParticipant {
+  id: string;
+  userId: string;
+  conversationId: string;
+}
+
 interface Conversation {
   id: string;
   createdAt: Date;
   messages: Message[];
+  participants: ConversationParticipant[];
 }
 
 interface AuthResponse {
@@ -40,4 +47,4 @@ interface AuthResponse {
   conversations: Conversation[];
 }
 
-export { User, Message, Conversation, AuthResponse, RegisterSchema, LoginSchema };
+export { User, Message, Conversation, ConversationParticipant, AuthResponse, RegisterSchema, LoginSchema };

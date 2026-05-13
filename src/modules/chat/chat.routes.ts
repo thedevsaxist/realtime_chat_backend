@@ -43,7 +43,9 @@ const chatController = new ChatController(chatService);
  *       500:
  *         description: Internal server error
  */
-chatRoutes.post('/', chatController.sendMessage);
+chatRoutes.get('/conversations', chatController.getConversations);
+chatRoutes.post('/conversations', chatController.createConversation);
+chatRoutes.post('/messages', chatController.sendMessage);
 
 /**
  * @swagger
@@ -79,4 +81,4 @@ chatRoutes.post('/', chatController.sendMessage);
  *       500:
  *         description: Internal server error
  */
-chatRoutes.get('/', chatController.getMessages);
+chatRoutes.get('/messages', chatController.getMessages);

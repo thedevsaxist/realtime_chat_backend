@@ -1,14 +1,19 @@
 import { Conversation, Message } from '../models';
-import { Prisma, Message as PrismaMessage } from '@prisma/client';
+import { Prisma, Message as PrismaMessage, ConversationParticipant as PrismaParticipant } from '@prisma/client';
 
-type ConversationWithMessages = Prisma.ConversationGetPayload<{
-  include: { messages: true };
+type ConversationWithDetails = Prisma.ConversationGetPayload<{
+  include: { messages: true; participants: true };
 }>;
 
-export const formatConversation = (convo: ConversationWithMessages): Conversation => ({
+export const formatConversation = (convo: ConversationWithDetails): Conversation => ({
   id: convo.id,
   createdAt: convo.createdAt,
   messages: convo.messages.map(formatMessage),
+  participants: convo.participants.map((p: PrismaParticipant) => ({
+    id: p.id,
+    userId: p.userId,
+    conversationId: p.conversationId,
+  })),
 });
 
 export const formatMessage = (message: PrismaMessage): Message => ({

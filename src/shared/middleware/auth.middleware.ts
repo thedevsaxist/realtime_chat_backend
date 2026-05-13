@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { logger } from '../logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
 
@@ -21,6 +22,7 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
     } 
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      logger.warn(`authMiddleware: missing or malformed token on ${req.method} ${req.path}`);
       res.status(401).json({ message: 'Authorization token missing or invalid' });
       return;
     }
@@ -29,8 +31,10 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
 
     req.user = decoded;
+    logger.debug(`authMiddleware: authenticated userId=${decoded.userId} on ${req.method} ${req.path}`);
     next();
   } catch (error) {
+    logger.warn(`authMiddleware: invalid or expired token on ${req.method} ${req.path}`);
     res.status(401).json({ message: 'Invalid or expired token' });
   }
 };

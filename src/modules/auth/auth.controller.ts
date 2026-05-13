@@ -94,6 +94,7 @@ export class AuthController {
         return;
       }
 
+      logger.debug(`DB read: user.findUnique email=${email}`);
       const existingUser = await prisma.user.findUnique({ where: { email } });
       if (existingUser) {
         res.status(409).json({ message: 'Email already exists' });
@@ -102,6 +103,7 @@ export class AuthController {
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
+      logger.debug(`DB write: user.create email=${email}`);
       const user = await prisma.user.create({
         data: {
           email,
@@ -200,6 +202,7 @@ export class AuthController {
 
       const { email, password } = validation.data;
 
+      logger.debug(`DB read: user.findUnique email=${email}`);
       const user = await prisma.user.findUnique({ where: { email } });
       if (!user) {
         logger.warn(`Login failed: Invalid credentials for email ${email}`);
@@ -214,8 +217,10 @@ export class AuthController {
         return;
       }
 
+      logger.debug(`DB read: conversation.findMany userId=${user.id}`);
       const rawConversations = await prisma.conversation.findMany({
-        include: { messages: true },
+        where: { participants: { some: { userId: user.id } } },
+        include: { messages: true, participants: true },
       });
       const conversations = rawConversations.map(formatConversation);
 

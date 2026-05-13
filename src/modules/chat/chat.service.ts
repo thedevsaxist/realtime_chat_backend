@@ -1,6 +1,8 @@
-import { ChatRepository } from './chat.repository';
-import { CreateMessageDTO, GetMessagesDTO } from './chat.types';
 import { AppError } from '../../shared/errors/AppError';
+import { CreateMessageDTO, GetMessagesDTO, CreateConversationDTO } from './chat.types';
+import { notifyUser } from '../../shared/utils/chat.socket.registry';
+import { ChatRepository } from './chat.repository';
+import { logger } from '../../shared/logger';
 
 /**
  * Handles chat business logic and validation before data persistence.
@@ -15,17 +17,36 @@ export class ChatService {
    * @throws {AppError} When conversationId is missing (400) or conversation does not exist (404).
    * @returns Newly created message entity from the repository.
    */
+  async getConversations(userId: string) {
+    logger.debug(`ChatService.getConversations: userId=${userId}`);
+    return this.chatRepository.getConversationsByUserId(userId);
+  }
+
+  async createConversation(data: CreateConversationDTO) {
+    if (!data.participantIds || data.participantIds.length < 2) {
+      throw new AppError('At least 2 participantIds are required', 400);
+    }
+    logger.debug(`ChatService.createConversation: participantIds=${data.participantIds}`);
+    const conversation = await this.chatRepository.createConversation(data.participantIds);
+    logger.info(`ChatService.createConversation: conversationId=${conversation.id} created`);
+    for (const userId of data.participantIds) {
+      notifyUser(userId, 'new_conversation', conversation);
+    }
+    return conversation;
+  }
+
   async createMessage(data: CreateMessageDTO) {
     if (!data.conversationId) {
       throw new AppError("conversationId is required", 400);
     }
-
+    logger.debug(`ChatService.createMessage: conversationId=${data.conversationId} senderId=${data.senderId}`);
     const conversation = await this.chatRepository.getConversationById(data.conversationId);
     if (!conversation) {
       throw new AppError('Conversation not found', 404);
     }
-
-    return this.chatRepository.createMessage(data);
+    const message = await this.chatRepository.createMessage(data);
+    logger.info(`ChatService.createMessage: messageId=${message.id} created`);
+    return message;
   }
 
   /**
@@ -41,12 +62,11 @@ export class ChatService {
       throw new AppError("conversationId is required", 400);
     }
     const limit = data.limit && data.limit > 0 ? Number(data.limit) : 20;
-
+    logger.debug(`ChatService.getMessages: conversationId=${data.conversationId} limit=${limit} before=${data.before}`);
     const conversation = await this.chatRepository.getConversationById(data.conversationId);
     if (!conversation) {
       throw new AppError('Conversation not found', 404);
     }
-
     return this.chatRepository.getMessages(data.conversationId, limit, data.before);
   }
 }
