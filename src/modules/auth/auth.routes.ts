@@ -76,3 +76,19 @@ authRoutes.post('/register', authController.register.bind(authController));
  *         description: Internal server error
  */
 authRoutes.post('/login', authController.login.bind(authController));
+
+/**
+ * @swagger
+ * /auth/refresh:
+ *   post:
+ *     summary: Refresh access token
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: New token issued
+ *       401:
+ *         description: Invalid or expired token
+ */
+authRoutes.post('/refresh', authController.refresh.bind(authController));

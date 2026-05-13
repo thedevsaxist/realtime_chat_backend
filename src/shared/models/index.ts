@@ -44,6 +44,7 @@ interface Conversation {
 interface AuthResponse {
   user: User;
   token: string;
+  refreshToken: string;
   conversations: Conversation[];
 }
 

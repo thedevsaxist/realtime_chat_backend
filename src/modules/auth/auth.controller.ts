@@ -8,7 +8,18 @@ import { formatUser } from '../../shared/utils/user';
 import { formatConversation } from '../../shared/utils/conversation';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
-const JWT_EXPIRES_IN = '24h';
+const JWT_EXPIRES_IN = '15m';
+const REFRESH_EXPIRES_IN = '7d';
+const REFRESH_EXPIRES_MS = 7 * 24 * 60 * 60 * 1000;
+
+async function generateTokens(userId: string, email: string) {
+  const token = jwt.sign({ userId, email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  const refreshToken = jwt.sign({ userId, email }, JWT_SECRET, { expiresIn: REFRESH_EXPIRES_IN });
+  await prisma.refreshToken.create({
+    data: { token: refreshToken, userId, expiresAt: new Date(Date.now() + REFRESH_EXPIRES_MS) },
+  });
+  return { token, refreshToken };
+}
 
 export class AuthController {
   /**
@@ -113,12 +124,11 @@ export class AuthController {
         },
       });
 
-      const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
-        expiresIn: JWT_EXPIRES_IN,
-      });
+      const { token, refreshToken } = await generateTokens(user.id, user.email);
 
       res.status(201).json({
         token,
+        refreshToken,
         user: formatUser(user),
       });
 
@@ -190,6 +200,34 @@ export class AuthController {
    *       500:
    *         description: Internal server error
    */
+  async refresh(req: Request, res: Response): Promise<void> {
+    try {
+      const { refreshToken } = req.body;
+      if (!refreshToken) {
+        res.status(401).json({ message: 'Refresh token missing' });
+        return;
+      }
+
+      const decoded = jwt.verify(refreshToken, JWT_SECRET) as { userId: string; email: string };
+
+      const stored = await prisma.refreshToken.findUnique({ where: { token: refreshToken } });
+      if (!stored || stored.expiresAt < new Date()) {
+        res.status(401).json({ message: 'Invalid or expired refresh token' });
+        return;
+      }
+
+      // Rotate: delete old, issue new pair
+      await prisma.refreshToken.delete({ where: { token: refreshToken } });
+      const { token, refreshToken: newRefreshToken } = await generateTokens(decoded.userId, decoded.email);
+
+      logger.info(`Tokens rotated for userId=${decoded.userId}`);
+      res.status(200).json({ token, refreshToken: newRefreshToken });
+    } catch (error) {
+      logger.warn('Token refresh failed: invalid or expired token');
+      res.status(401).json({ message: 'Invalid or expired refresh token' });
+    }
+  }
+
   async login(req: Request, res: Response): Promise<void> {
     try {
       const validation = LoginSchema.safeParse(req.body);
@@ -224,13 +262,12 @@ export class AuthController {
       });
       const conversations = rawConversations.map(formatConversation);
 
-      const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
-        expiresIn: JWT_EXPIRES_IN,
-      });
+      const { token, refreshToken } = await generateTokens(user.id, user.email);
 
       res.status(200).json({
         user: formatUser(user),
         token,
+        refreshToken,
         conversations,
       } as AuthResponse);
 

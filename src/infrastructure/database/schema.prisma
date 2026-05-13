@@ -32,6 +32,14 @@ model ConversationParticipant {
   @@unique([userId, conversationId])
 }
 
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
 model Message {
   id             String       @id @default(uuid())
   content        String
