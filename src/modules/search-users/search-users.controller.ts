@@ -14,6 +14,7 @@ class SearchUsersController {
 
       if (users.length === 0) {
         res.status(404).json({ message: 'No users found' });
+        return;
       }
 
       // const filteredUsers = users.filter((u) => u.id !== user.id);

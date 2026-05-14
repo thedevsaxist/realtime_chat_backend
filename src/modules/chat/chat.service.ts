@@ -40,12 +40,15 @@ export class ChatService {
       throw new AppError("conversationId is required", 400);
     }
     logger.debug(`ChatService.createMessage: conversationId=${data.conversationId} senderId=${data.senderId}`);
-    const conversation = await this.chatRepository.getConversationById(data.conversationId);
+    const conversation = await this.chatRepository.getConversationWithParticipants(data.conversationId);
     if (!conversation) {
       throw new AppError('Conversation not found', 404);
     }
     const message = await this.chatRepository.createMessage(data);
     logger.info(`ChatService.createMessage: messageId=${message.id} created`);
+    for (const { userId } of conversation.participants) {
+      notifyUser(userId, 'message', message);
+    }
     return message;
   }
 

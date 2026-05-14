@@ -24,6 +24,14 @@ export class ChatRepository {
     });
   }
 
+  async getConversationWithParticipants(id: string) {
+    logger.debug(`DB read: conversation.findUnique with participants id=${id}`);
+    return prisma.conversation.findUnique({
+      where: { id },
+      include: { participants: true },
+    });
+  }
+
   async createConversation(participantIds: string[]) {
     logger.debug(`DB write: conversation.create participantIds=${participantIds}`);
     return prisma.conversation.create({
