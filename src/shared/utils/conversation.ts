@@ -1,18 +1,25 @@
 import { Conversation, Message } from '../models';
-import { Prisma, Message as PrismaMessage, ConversationParticipant as PrismaParticipant } from '@prisma/client';
+import { Prisma, Message as PrismaMessage } from '@prisma/client';
 
-type ConversationWithDetails = Prisma.ConversationGetPayload<{
-  include: { messages: true; participants: true };
+type ParticipantWithUser = Prisma.ConversationParticipantGetPayload<{
+  include: { user: { select: { firstName: true; lastName: true } } };
 }>;
 
-export const formatConversation = (convo: ConversationWithDetails): Conversation => ({
+type ConversationWithDetails = {
+  id: string;
+  createdAt: Date;
+  messages?: PrismaMessage[];
+  participants: ParticipantWithUser[];
+};
+
+export const formatConversation = (convo: ConversationWithDetails, includeMessages = false): Conversation => ({
   id: convo.id,
   createdAt: convo.createdAt,
-  messages: convo.messages.map(formatMessage),
-  participants: convo.participants.map((p: PrismaParticipant) => ({
-    id: p.id,
+  ...(includeMessages && { messages: convo.messages?.map(formatMessage) }),
+  participants: convo.participants.map((p: ParticipantWithUser) => ({
     userId: p.userId,
-    conversationId: p.conversationId,
+    firstName: p.user.firstName,
+    lastName: p.user.lastName,
   })),
 });
 

@@ -30,7 +30,7 @@ app.use(authMiddleware);
 
 app.use('/', chatRoutes);
 
-app.use('/users', searchUsersRoutes);
+app.use('/', searchUsersRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

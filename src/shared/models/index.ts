@@ -29,15 +29,15 @@ interface Message {
 }
 
 interface ConversationParticipant {
-  id: string;
   userId: string;
-  conversationId: string;
+  firstName: string;
+  lastName: string;
 }
 
 interface Conversation {
   id: string;
   createdAt: Date;
-  messages: Message[];
+  messages?: Message[];
   participants: ConversationParticipant[];
 }
 

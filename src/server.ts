@@ -1,3 +1,7 @@
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
 import http from 'http';
 // import { Server } from 'socket.io';
 import { WebSocketServer, WebSocket } from 'ws';

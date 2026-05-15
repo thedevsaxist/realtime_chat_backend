@@ -1,14 +1,15 @@
 import { logger } from '../../shared/logger';
-import { Request, Response } from 'express';
-import { User } from '../../shared/models';
+import { Response } from 'express';
+
 import { SearchUserService } from './search-users.service';
+import { AuthRequest } from '../../shared/middleware/auth.middleware';
 
 const searchUserService = new SearchUserService();
 
 class SearchUsersController {
-  async searchUsers(req: Request, res: Response): Promise<void> {
+  async searchUsers(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const userId = req.body.userId as string;
+      const userId = req.user?.userId as string;
 
       const users = await searchUserService.searchUser(userId);
 

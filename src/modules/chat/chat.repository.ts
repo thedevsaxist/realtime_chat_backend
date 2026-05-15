@@ -1,6 +1,12 @@
 import { prisma } from '../../infrastructure/database/prisma';
-import { CreateMessageDTO, CreateConversationDTO } from './chat.types';
+import { CreateMessageDTO } from './chat.types';
 import { logger } from '../../shared/logger';
+
+const participantsInclude = {
+  participants: {
+    include: { user: { select: { firstName: true, lastName: true } } },
+  },
+} as const;
 
 /**
  * Handles low-level chat persistence operations using Prisma.
@@ -13,7 +19,7 @@ export class ChatRepository {
     logger.debug(`DB read: conversation.findMany userId=${userId}`);
     return prisma.conversation.findMany({
       where: { participants: { some: { userId } } },
-      include: { messages: true, participants: true },
+      include: { ...participantsInclude, messages: true },
     });
   }
 
@@ -28,19 +34,20 @@ export class ChatRepository {
     logger.debug(`DB read: conversation.findUnique with participants id=${id}`);
     return prisma.conversation.findUnique({
       where: { id },
-      include: { participants: true },
+      include: participantsInclude,
     });
   }
 
   async createConversation(participantIds: string[]) {
     logger.debug(`DB write: conversation.create participantIds=${participantIds}`);
+
     return prisma.conversation.create({
       data: {
         participants: {
           create: participantIds.map((userId) => ({ userId })),
         },
       },
-      include: { participants: true },
+      include: participantsInclude,
     });
   }
 
@@ -48,7 +55,9 @@ export class ChatRepository {
    * Creates and persists a new message in a conversation.
    */
   async createMessage(data: CreateMessageDTO) {
-    logger.debug(`DB write: message.create conversationId=${data.conversationId} senderId=${data.senderId}`);
+    logger.debug(
+      `DB write: message.create conversationId=${data.conversationId} senderId=${data.senderId}`,
+    );
     return prisma.message.create({
       data: {
         conversationId: data.conversationId,
@@ -63,7 +72,9 @@ export class ChatRepository {
    * Uses cursor pagination when `before` is provided.
    */
   async getMessages(conversationId: string, limit: number, before?: string) {
-    logger.debug(`DB read: message.findMany conversationId=${conversationId} limit=${limit} before=${before}`);
+    logger.debug(
+      `DB read: message.findMany conversationId=${conversationId} limit=${limit} before=${before}`,
+    );
     const query: any = {
       where: { conversationId },
       orderBy: { createdAt: 'desc' },

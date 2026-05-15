@@ -6,6 +6,7 @@ import { logger } from '../../shared/logger';
 import { AuthResponse, RegisterSchema, LoginSchema } from '../../shared/models';
 import { formatUser } from '../../shared/utils/user';
 import { formatConversation } from '../../shared/utils/conversation';
+import { ChatRepository } from '../chat/chat.repository';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
 const JWT_EXPIRES_IN = '15m';
@@ -22,72 +23,8 @@ async function generateTokens(userId: string, email: string) {
 }
 
 export class AuthController {
-  /**
-   * @swagger
-   * /auth/register:
-   *   post:
-   *     summary: Register a new user account
-   *     tags: [Auth]
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             required:
-   *               - email
-   *               - password
-   *               - firstName
-   *               - lastName
-   *             properties:
-   *               email:
-   *                 type: string
-   *                 format: email
-   *                 example: user@example.com
-   *               password:
-   *                 type: string
-   *                 minLength: 6
-   *                 example: password123
-   *               firstName:
-   *                 type: string
-   *                 example: John
-   *               lastName:
-   *                 type: string
-   *                 example: Doe
-   *     responses:
-   *       201:
-   *         description: User registered successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 token:
-   *                   type: string
-   *                   example: jwt_token_here
-   *                 user:
-   *                   type: object
-   *                   properties:
-   *                     id:
-   *                       type: string
-   *                       example: clx123abc
-   *                     email:
-   *                       type: string
-   *                       format: email
-   *                       example: user@example.com
-   *                     firstName:
-   *                       type: string
-   *                       example: John
-   *                     lastName:
-   *                       type: string
-   *                       example: Doe
-   *       400:
-   *         description: Invalid credentials or missing required fields
-   *       409:
-   *         description: Email already exists
-   *       500:
-   *         description: Internal server error
-   */
+  private readonly chatRepository = new ChatRepository();
+
   async register(req: Request, res: Response): Promise<void> {
     try {
       const validation = RegisterSchema.safeParse(req.body);
@@ -139,67 +76,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * @swagger
-   * /auth/login:
-   *   post:
-   *     summary: Authenticate user and return access token
-   *     tags: [Auth]
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             required:
-   *               - email
-   *               - password
-   *             properties:
-   *               email:
-   *                 type: string
-   *                 format: email
-   *                 example: user@example.com
-   *               password:
-   *                 type: string
-   *                 example: password123
-   *     responses:
-   *       200:
-   *         description: Login successful
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 user:
-   *                   type: object
-   *                   properties:
-   *                     id:
-   *                       type: string
-   *                       example: clx123abc
-   *                     email:
-   *                       type: string
-   *                       format: email
-   *                       example: user@example.com
-   *                     firstName:
-   *                       type: string
-   *                       example: John
-   *                     lastName:
-   *                       type: string
-   *                       example: Doe
-   *                 token:
-   *                   type: string
-   *                   example: jwt_token_here
-   *                 conversations:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *       400:
-   *         description: Invalid credentials payload
-   *       401:
-   *         description: Invalid email or password
-   *       500:
-   *         description: Internal server error
-   */
   async refresh(req: Request, res: Response): Promise<void> {
     try {
       const { refreshToken } = req.body;
@@ -218,7 +94,10 @@ export class AuthController {
 
       // Rotate: delete old, issue new pair
       await prisma.refreshToken.delete({ where: { token: refreshToken } });
-      const { token, refreshToken: newRefreshToken } = await generateTokens(decoded.userId, decoded.email);
+      const { token, refreshToken: newRefreshToken } = await generateTokens(
+        decoded.userId,
+        decoded.email,
+      );
 
       logger.info(`Tokens rotated for userId=${decoded.userId}`);
       res.status(200).json({ token, refreshToken: newRefreshToken });
@@ -256,11 +135,8 @@ export class AuthController {
       }
 
       logger.debug(`DB read: conversation.findMany userId=${user.id}`);
-      const rawConversations = await prisma.conversation.findMany({
-        where: { participants: { some: { userId: user.id } } },
-        include: { messages: true, participants: true },
-      });
-      const conversations = rawConversations.map(formatConversation);
+      const rawConversations = await this.chatRepository.getConversationsByUserId(user.id);
+      const conversations = rawConversations.map((c) => formatConversation(c, true));
 
       const { token, refreshToken } = await generateTokens(user.id, user.email);
 

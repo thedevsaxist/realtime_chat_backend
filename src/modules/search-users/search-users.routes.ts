@@ -5,4 +5,4 @@ export const searchUsersRoutes = Router();
 
 const searchUsersController = new SearchUsersController();
 
-searchUsersRoutes.get('/', searchUsersController.searchUsers);
+searchUsersRoutes.get('/search-users', searchUsersController.searchUsers);
