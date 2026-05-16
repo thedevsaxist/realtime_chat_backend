@@ -6,6 +6,7 @@ export interface CreateMessageDTO {
   conversationId: string;
   senderId: string;
   content: string;
+  tempId?: string;
 }
 
 export interface GetMessagesDTO {

@@ -51,13 +51,17 @@ export const registerRawChatSocketEvents = (wss: WebSocketServer) => {
         const { event, data } = JSON.parse(rawData.toString());
 
         if (event === 'send_message') {
-          const { conversationId, senderId, content } = data;
-          await chatService.createMessage({ conversationId, senderId, content });
+          const { conversationId, senderId, content, tempId } = data;
+          await chatService.createMessage({ conversationId, senderId, content, tempId });
+
           logger.info(`Message sent in conversation ${conversationId} by userId=${userId}`);
         }
       } catch (error) {
         logger.error(`Failed to process raw socket message: ${error}`);
-        socket.send(JSON.stringify({ event: 'error', data: { message: 'Failed to process message' } }));
+
+        socket.send(
+          JSON.stringify({ event: 'error', data: { message: 'Failed to process message' } }),
+        );
       }
     });
 

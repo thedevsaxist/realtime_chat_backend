@@ -36,7 +36,7 @@ export class ChatController {
       const conversation = await this.chatService.createConversation(data);
       logger.info(`createConversation: created conversationId=${conversation.id}`);
 
-      res.status(201).json({ conversation });
+      res.status(201).json(conversation);
     } catch (error) {
       next(error);
     }
