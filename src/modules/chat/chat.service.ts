@@ -38,7 +38,7 @@ export class ChatService {
     );
 
     // Verify conversation exists — same guard pattern as createMessage/getMessages
-    const conversation = await this.chatRepository.getConversationById(conversationId);
+    const conversation = await this.chatRepository.getConversationWithParticipants(conversationId);
     if (!conversation) {
       throw new AppError('Conversation not found', 404);
     }
@@ -48,6 +48,12 @@ export class ChatService {
     logger.info(
       `ChatService.markAsRead: userId=${userId} marked conversationId=${conversationId} as read up to messageId=${lastMessageId}`,
     );
+
+    for (const { userId: participantId } of conversation.participants) {
+      if (participantId !== userId) {
+        notifyUser(participantId, 'read_receipt', { conversationId, lastMessageId });
+      }
+    }
 
     return raw;
   }

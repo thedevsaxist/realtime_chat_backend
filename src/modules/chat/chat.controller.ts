@@ -31,13 +31,17 @@ export class ChatController {
   markAsRead = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const userId = req.user?.userId;
+      const { conversationId, lastMessageId } = req.params as {
+        conversationId: string;
+        lastMessageId: string;
+      };
 
       if (!userId) {
         res.status(401).json({ message: 'Unauthorized' });
         return;
       }
 
-      const { conversationId, lastMessageId } = req.body;
+      // const { conversationId, lastMessageId } = req.body;
 
       if (!conversationId || !lastMessageId) {
         res.status(400).json({ message: 'conversationId and lastMessageId are required' });
@@ -81,8 +85,6 @@ export class ChatController {
     }
   };
 
-
-  
   createConversation = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data: CreateConversationDTO = req.body;

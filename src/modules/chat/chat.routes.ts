@@ -12,7 +12,7 @@ const chatController = new ChatController(chatService);
 
 chatRoutes.get('/messages', chatController.getMessages);
 chatRoutes.get('/conversations', chatController.getConversations);
-chatRoutes.patch('/conversations/read', chatController.markAsRead);
+chatRoutes.patch('/conversations/:conversationId/read/:lastMessageId', chatController.markAsRead);
 chatRoutes.post('/conversations', chatController.createConversation);
 chatRoutes.get('/conversations/unread', chatController.getUnreadCount);
 
