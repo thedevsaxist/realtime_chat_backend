@@ -19,7 +19,44 @@ export class ChatRepository {
     logger.debug(`DB read: conversation.findMany userId=${userId}`);
     return prisma.conversation.findMany({
       where: { participants: { some: { userId } } },
-      include: { ...participantsInclude, messages: true },
+      include: {
+        ...participantsInclude,
+        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+      },
+    });
+  }
+
+  async markAsRead(userId: string, conversationId: string, lastMessageId: string) {
+    logger.debug(
+      `DB write: markAsRead lastMessageId=${lastMessageId} userId=${userId} conversationId=${conversationId}`,
+    );
+    return prisma.conversationParticipant.upsert({
+      where: { userId_conversationId: { userId, conversationId } },
+      update: {
+        lastReadMessageId: lastMessageId,
+        lastReadAt: new Date(),
+      },
+      create: {
+        userId,
+        conversationId: conversationId,
+        lastReadMessageId: lastMessageId,
+        lastReadAt: new Date(),
+      },
+    });
+  }
+
+  async getUnreadCount(userId: string, conversationId: string) {
+    const member = await prisma.conversationParticipant.findUnique({
+      where: { userId_conversationId: { userId, conversationId: conversationId } },
+      select: { lastReadAt: true },
+    });
+
+    return prisma.message.count({
+      where: {
+        conversationId: conversationId,
+        senderId: { not: userId }, // exclude own messages
+        createdAt: { gt: member?.lastReadAt ?? new Date(0) },
+      },
     });
   }
 

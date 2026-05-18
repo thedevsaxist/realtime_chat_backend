@@ -24,6 +24,55 @@ export class ChatService {
     return raw.map((c) => formatConversation(c));
   }
 
+  async markAsRead(userId: string, conversationId: string, lastMessageId: string) {
+    if (!conversationId) {
+      throw new AppError('conversationId is required', 400);
+    }
+
+    if (!lastMessageId) {
+      throw new AppError('lastMessageId is required', 400);
+    }
+
+    logger.debug(
+      `ChatService.markAsRead: userId=${userId} conversationId=${conversationId} lastMessageId=${lastMessageId}`,
+    );
+
+    // Verify conversation exists — same guard pattern as createMessage/getMessages
+    const conversation = await this.chatRepository.getConversationById(conversationId);
+    if (!conversation) {
+      throw new AppError('Conversation not found', 404);
+    }
+
+    const raw = await this.chatRepository.markAsRead(userId, conversationId, lastMessageId);
+
+    logger.info(
+      `ChatService.markAsRead: userId=${userId} marked conversationId=${conversationId} as read up to messageId=${lastMessageId}`,
+    );
+
+    return raw;
+  }
+
+  async getUnreadCount(userId: string, conversationId: string) {
+    if (!conversationId) {
+      throw new AppError('conversationId is required', 400);
+    }
+
+    logger.debug(`ChatService.getUnreadCount: userId=${userId} conversationId=${conversationId}`);
+
+    const conversation = await this.chatRepository.getConversationById(conversationId);
+    if (!conversation) {
+      throw new AppError('Conversation not found', 404);
+    }
+
+    const count = await this.chatRepository.getUnreadCount(userId, conversationId);
+
+    logger.info(
+      `ChatService.getUnreadCount: userId=${userId} conversationId=${conversationId} count=${count}`,
+    );
+
+    return count;
+  }
+
   async createConversation(data: CreateConversationDTO) {
     if (!data.participantIds || data.participantIds.length < 2) {
       throw new AppError('At least 2 participantIds are required', 400);

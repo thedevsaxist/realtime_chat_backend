@@ -28,6 +28,61 @@ export class ChatController {
     }
   };
 
+  markAsRead = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
+      }
+
+      const { conversationId, lastMessageId } = req.body;
+
+      if (!conversationId || !lastMessageId) {
+        res.status(400).json({ message: 'conversationId and lastMessageId are required' });
+        return;
+      }
+
+      await this.chatService.markAsRead(userId, conversationId, lastMessageId);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getUnreadCount = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
+      }
+
+      const { conversationId } = req.query as { conversationId: string };
+
+      if (!conversationId) {
+        res.status(400).json({ message: 'conversationId is required' });
+        return;
+      }
+
+      logger.debug(`getUnreadCount: userId=${userId} conversationId=${conversationId}`);
+
+      const count = await this.chatService.getUnreadCount(userId, conversationId);
+
+      logger.info(
+        `getUnreadCount: userId=${userId} conversationId=${conversationId} count=${count}`,
+      );
+
+      res.status(200).json({ conversationId, unreadCount: count });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+
+  
   createConversation = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data: CreateConversationDTO = req.body;

@@ -24,11 +24,14 @@ model Conversation {
 }
 
 model ConversationParticipant {
-  id             String       @id @default(uuid())
-  userId         String
-  conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                          String                  @id @default(uuid())
+  userId                      String            
+  conversationId              String            
+  lastReadAt                  DateTime?           
+  lastReadMessageId           String?           
+  lastReadMsg                 Message?                @relation(fields: [lastReadMessageId], references: [id])
+  conversation                Conversation            @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user                        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, conversationId])
 }
@@ -42,10 +45,11 @@ model RefreshToken {
 }
 
 model Message {
-  id             String       @id @default(uuid())
-  content        String
-  senderId       String
-  conversationId String
-  createdAt      DateTime     @default(now())
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  id                      String                          @id @default(uuid())
+  content                 String                    
+  senderId                String                    
+  conversationId          String                    
+  createdAt               DateTime                        @default(now())
+  conversation            Conversation                    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  readCursors             ConversationParticipant[]
 }
