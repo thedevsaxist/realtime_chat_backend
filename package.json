@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "NODE_ENV=development ts-node-dev --respawn src/server.ts",
-    "build": "tsc && npx prisma generate --schema=src/infrastructure/database/schema.prisma && npx prisma migrate deploy",
+    "build": "npx prisma generate --schema=src/infrastructure/database/schema.prisma && tsc && npx prisma migrate deploy",
     "start": "NODE_ENV=production node dist/server.js",
     "migrate:deploy": "npx prisma migrate deploy",
     "start:prod": "npm run migrate:deploy && npm start",
