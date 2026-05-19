@@ -5,7 +5,7 @@ type ParticipantWithUser = Prisma.ConversationParticipantGetPayload<{
   include: { user: { select: { firstName: true; lastName: true } } };
 }>;
 
-type ConversationWithDetails = {
+export type ConversationWithDetails = {
   id: string;
   createdAt: Date;
   messages?: PrismaMessage[];

@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import { logger } from '../../shared/logger';
 import { AuthResponse, RegisterSchema, LoginSchema } from '../../shared/models';
 import { formatUser } from '../../shared/utils/user';
-import { formatConversation } from '../../shared/utils/conversation';
+import { ConversationWithDetails, formatConversation } from '../../shared/utils/conversation';
 import { ChatRepository } from '../chat/chat.repository';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
@@ -136,7 +136,9 @@ export class AuthController {
 
       logger.debug(`DB read: conversation.findMany userId=${user.id}`);
       const rawConversations = await this.chatRepository.getConversationsByUserId(user.id);
-      const conversations = rawConversations.map((c) => formatConversation(c, true));
+      const conversations = rawConversations.map((c: ConversationWithDetails) =>
+        formatConversation(c, true),
+      );
 
       const { token, refreshToken } = await generateTokens(user.id, user.email);
 

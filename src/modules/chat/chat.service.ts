@@ -3,7 +3,7 @@ import { CreateMessageDTO, GetMessagesDTO, CreateConversationDTO } from './chat.
 import { notifyUser } from '../../shared/utils/chat.socket.registry';
 import { ChatRepository } from './chat.repository';
 import { logger } from '../../shared/logger';
-import { formatConversation } from '../../shared/utils/conversation';
+import { ConversationWithDetails, formatConversation } from '../../shared/utils/conversation';
 
 /**
  * Handles chat business logic and validation before data persistence.
@@ -21,7 +21,7 @@ export class ChatService {
   async getConversations(userId: string) {
     logger.debug(`ChatService.getConversations: userId=${userId}`);
     const raw = await this.chatRepository.getConversationsByUserId(userId);
-    return raw.map((c) => formatConversation(c));
+    return raw.map((c: ConversationWithDetails) => formatConversation(c));
   }
 
   async markAsRead(userId: string, conversationId: string, lastMessageId: string) {
