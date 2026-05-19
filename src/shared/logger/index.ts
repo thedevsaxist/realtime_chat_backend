@@ -1,23 +1,22 @@
 import winston from 'winston';
+import { config } from '../../config';
 
 export const logger = winston.createLogger({
-  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+  level: config.isProduction ? 'warn' : 'debug',
   format: winston.format.combine(
     winston.format.timestamp({
       format: 'YYYY-MM-DD HH:mm:ss',
     }),
     winston.format.errors({ stack: true }),
     winston.format.splat(),
-    winston.format.json()
+    config.isProduction ? winston.format.json() : winston.format.prettyPrint(),
   ),
   defaultMeta: { service: 'realtime-chat-backend' },
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.colorize(),
-        winston.format.printf(
-          (info) => `[${info.timestamp}] ${info.level}: ${info.message}`
-        )
+        winston.format.printf((info) => `[${info.timestamp}] ${info.level}: ${info.message}\n\n`),
       ),
     }),
   ],

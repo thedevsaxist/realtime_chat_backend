@@ -30,7 +30,9 @@ registerRawChatSocketEvents(wss);
 
 const startServer = () => {
   server.listen(config.port, () => {
-    logger.info(`Server is running in ${config.nodeEnv} mode on port ${config.port}`);
+    logger.info(
+      `Server is running in ${config.isProduction ? 'production' : 'development'} mode on port ${config.port}`,
+    );
   });
 
   // Handle unhandled promise rejections
