@@ -4,14 +4,17 @@ initSentry(); // must be the very first call
 import * as Sentry from '@sentry/node';
 import express from 'express';
 import cors from 'cors';
+import { config } from './config'; // ✅ moved up
+
 import { errorHandler } from './shared/middleware/errorHandler';
 import { logger } from './shared/logger';
+import { chatRoutes } from './modules/chat/chat.routes';
+import { healthRoutes } from './modules/health/health.routes';
+import { authRoutes } from './modules/auth/auth.routes';
+import { authMiddleware } from './shared/middleware/auth.middleware';
+import { searchUsersRoutes } from './modules/search-users/search-users.routes';
 
 export const app = express();
-
-// Sentry request handler 
-app.use(Sentry.Handlers.requestHandler());
-app.use(Sentry.Handlers.tracingHandler());
 
 // Middleware
 app.use(cors());
@@ -26,24 +29,17 @@ app.use((req, res, next) => {
   next();
 });
 
-import { chatRoutes } from './modules/chat/chat.routes';
-import { healthRoutes } from './modules/health/health.routes';
-import { authRoutes } from './modules/auth/auth.routes';
-import { authMiddleware } from './shared/middleware/auth.middleware';
-import { searchUsersRoutes } from './modules/search-users/search-users.routes';
-
 // Routes
 app.use('/health', healthRoutes);
 app.use('/auth', authRoutes);
 
-// Apply auth middleware for all protected routes below this line
 app.use(authMiddleware);
 
 app.use('/', chatRoutes);
-
 app.use('/', searchUsersRoutes);
 
-app.use(Sentry.Handlers.errorHandler());
+// ✅ Sentry error handler BEFORE your custom error handler
+Sentry.setupExpressErrorHandler(app);
 
-// Global Error Handler
+// ✅ Your custom error handler last
 app.use(errorHandler);
