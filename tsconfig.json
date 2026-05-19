@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "es2022",
     "module": "commonjs",
-    "rootDir": "./src",
+    "rootDir": ".",
     "outDir": "./dist",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -11,7 +11,7 @@
   },
   "include": [
     "src/**/*",
-    "src/infrastructure/database/prisma.config.ts"
+    "prisma.config.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }

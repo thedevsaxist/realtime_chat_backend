@@ -38,6 +38,15 @@ app.use(authMiddleware);
 app.use('/', chatRoutes);
 app.use('/', searchUsersRoutes);
 
+
+// app.get('/debug-sentry', function mainHandler(req, res) {
+//   // Send a log before throwing the error
+//   Sentry.logger.info('User triggered test error', {
+//     action: 'test_error_endpoint',
+//   });
+//   throw new Error('My first Sentry error!');
+// });
+
 // ✅ Sentry error handler BEFORE your custom error handler
 Sentry.setupExpressErrorHandler(app);
 

@@ -11,5 +11,10 @@ export function initSentry() {
     integrations: [expressIntegration(), nodeProfilingIntegration()],
     tracesSampleRate: 0.2,
     profilesSampleRate: 0.1,
+    // Send structured logs to Sentry
+    enableLogs: true,
+    // Setting this option to true will send default PII data to Sentry.
+    // For example, automatic IP address collection on events
+    sendDefaultPii: true,
   });
 }
