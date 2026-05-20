@@ -14,12 +14,6 @@ export interface AuthRequest extends Request {
 export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction): void => {
   try {
     const authHeader = req.headers.authorization;
-    const excludePaths = ['/auth', '/health'];
-
-    if (excludePaths.includes(req.path)) {
-      next();
-      return;
-    } 
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       logger.warn(`authMiddleware: missing or malformed token on ${req.method} ${req.path}`);
