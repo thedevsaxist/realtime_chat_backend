@@ -58,6 +58,28 @@ export class ChatService {
     return raw;
   }
 
+  async getPeerReadPosition(userId: string, conversationId: string) {
+    if (!conversationId) {
+      throw new AppError('conversationId is required', 400);
+    }
+
+    logger.debug(
+      `ChatService.getPeerReadPosition: userId=${userId} conversationId=${conversationId}`,
+    );
+
+    const conversation = await this.chatRepository.getConversationById(conversationId);
+    if (!conversation) {
+      throw new AppError('Conversation not found', 404);
+    }
+
+    const { lastReadMessageId, lastReadAt } = await this.chatRepository.getPeerLastReadMessageId(
+      conversationId,
+      userId,
+    );
+
+    return { lastReadMessageId, lastReadAt };
+  }
+
   async getUnreadCount(userId: string, conversationId: string) {
     if (!conversationId) {
       throw new AppError('conversationId is required', 400);

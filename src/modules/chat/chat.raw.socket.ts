@@ -15,8 +15,11 @@ function getUserIdFromRequest(req: IncomingMessage): string | null {
     const token = url.searchParams.get('token');
     if (!token) return null;
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+
+    logger.info(`websocketAuthWMiddleware: Successful authentication with id = ${decoded.userId}}`);
     return decoded.userId;
   } catch {
+    logger.warn(`websocketAuthWMiddleware: invalid or expired token on Websocket connection`);
     return null;
   }
 }
@@ -39,10 +42,13 @@ const chatService = new ChatService(chatRepository);
 export const registerRawChatSocketEvents = (wss: WebSocketServer) => {
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
     const userId = getUserIdFromRequest(req);
-    if (!userId) {
+
+    if (!userId || userId === null) {
+      socket.send(JSON.stringify({ type: 'error', statusCode: 401, message: 'Invalid Token' }));
       socket.close(4001, 'Unauthorized');
       return;
     }
+    
     registerUserSocket(userId, socket);
     logger.info(`Client connected: userId=${userId}`);
 

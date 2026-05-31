@@ -48,8 +48,30 @@ export class ChatController {
         return;
       }
 
-      await this.chatService.markAsRead(userId, conversationId, lastMessageId);
-      res.status(200).json({ success: true });
+      const result = await this.chatService.markAsRead(userId, conversationId, lastMessageId);
+      res.status(200).json({ success: true, readAt: result?.lastReadAt });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getPeerRead = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.userId;
+      const { conversationId } = req.params as { conversationId: string };
+
+      if (!userId) {
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
+      }
+
+      if (!conversationId) {
+        res.status(400).json({ message: 'conversationId is required' });
+        return;
+      }
+
+      const result = await this.chatService.getPeerReadPosition(userId, conversationId);
+      res.status(200).json(result);
     } catch (error) {
       next(error);
     }
@@ -67,6 +89,7 @@ export class ChatController {
       const { conversationId } = req.query as { conversationId: string };
 
       if (!conversationId) {
+        logger.warn('conversationId is required');
         res.status(400).json({ message: 'conversationId is required' });
         return;
       }

@@ -15,5 +15,6 @@ chatRoutes.get('/conversations', chatController.getConversations);
 chatRoutes.patch('/conversations/:conversationId/read/:lastMessageId', chatController.markAsRead);
 chatRoutes.post('/conversations', chatController.createConversation);
 chatRoutes.get('/conversations/unread', chatController.getUnreadCount);
+chatRoutes.get('/conversations/:conversationId/peer-read', chatController.getPeerRead);
 
 // chatRoutes.post('/messages', chatController.sendMessage);

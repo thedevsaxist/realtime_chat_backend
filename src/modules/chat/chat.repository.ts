@@ -21,7 +21,7 @@ export class ChatRepository {
       where: { participants: { some: { userId } } },
       include: {
         ...participantsInclude,
-        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+        messages: { orderBy: { createdAt: 'desc' } },
       },
     });
   }
@@ -43,6 +43,20 @@ export class ChatRepository {
         lastReadAt: new Date(),
       },
     });
+  }
+
+  async getPeerLastReadMessageId(conversationId: string, currentUserId: string) {
+    logger.debug(
+      `DB read: conversationParticipant peer lastRead conversationId=${conversationId} currentUserId=${currentUserId}`,
+    );
+    const peer = await prisma.conversationParticipant.findFirst({
+      where: {
+        conversationId,
+        userId: { not: currentUserId },
+      },
+      select: { lastReadMessageId: true, lastReadAt: true },
+    });
+    return { lastReadMessageId: peer?.lastReadMessageId, lastReadAt: peer?.lastReadAt };
   }
 
   async getUnreadCount(userId: string, conversationId: string) {

@@ -22,9 +22,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.path}`, {
-    query: req.query,
-    body: req.method !== 'GET' ? req.body : undefined,
+  const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
+
+  const url = queryString ? `${req.path}?${queryString}` : req.path;
+
+  const body =
+    req.method !== 'GET' && req.body != null && typeof req.body === 'object' ? req.body : undefined;
+
+  const hasBody =
+    body != null && (Array.isArray(body) ? body.length > 0 : Object.keys(body).length > 0);
+
+  logger.info(`${req.method} ${url}`, {
+    ...(hasBody && { body }),
   });
   next();
 });
